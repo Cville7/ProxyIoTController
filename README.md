@@ -1,7 +1,1 @@
-<<<<<<< HEAD
-# ProxyIoTController
-# hashtag 
-& not_a_hastag
-=======
-# ProxyIoTController
->>>>>>> 339fa94041803204209d6be15ba48ba760b17c85
+#If you have 3 quarters, 4 dimes, and 4 pennies, you have $1.19. You also have the largest amount of money in coins without being able to make change for a dollar.
