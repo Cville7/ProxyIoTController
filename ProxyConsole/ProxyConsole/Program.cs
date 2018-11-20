@@ -122,10 +122,21 @@ namespace ProxyConsole {
             }
 
             int lightNum = -1;
+            char input = '!';
             do {
                 Console.Write("Enter Light #: ");
                 lightNum = Convert.ToInt32(Console.ReadLine());
-                if(lightNum >= 0 && lightNum < bridge.lights.Count) Console.WriteLine("{0}\n", bridge.lights[lightNum]);
+
+                if(lightNum >= 0 && lightNum < bridge.lights.Count) {
+                    Console.WriteLine("{0}", bridge.lights[lightNum]);
+                    Console.Write("\nToggle? [y/n]: ");
+                    input = Convert.ToChar(Console.ReadLine());
+                    if(input == 'y') {
+                        bridge.lights[lightNum].state.on = !(bridge.lights[lightNum].state.on);
+                        StringContent content = new StringContent(JsonConvert.SerializeObject(bridge.lights[lightNum].state));
+                        client.PutAsync("lights/" + lightNum + "/state/", content);
+                    }
+                }
             } while(lightNum != -1);
 
             /*
