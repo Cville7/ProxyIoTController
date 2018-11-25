@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Net.Http;
 
 namespace ProxyConsole {
@@ -19,20 +20,51 @@ namespace ProxyConsole {
             Console.WriteLine(hub.Client.PutAsync("lights/" + "id: " + lights[0].ID + "/state", new StringContent("")).Result.Content.ReadAsStringAsync().Result);
 
             int lightNum = -1;
-            char input = '!';
-            do {
-                Console.Write("Enter Light #: ");
-                lightNum = Convert.ToInt32(Console.ReadLine());
+            char charInput = '!';
+            string stringInput = "";
 
+            do {
+                Console.Write("\nEnter Light #: ");
+                lightNum = Convert.ToInt32(Console.ReadLine());
+                
                 if(lightNum >= 0 && lightNum < lights.Count) {
-                    Console.WriteLine("{0}\n", lights[lightNum]);
-                    Console.Write("Toggle? [y/n]: ");
-                    input = Convert.ToChar(Console.ReadLine());
-                    if(input == 'y') {
-                        lights[lightNum].SetState(lights[lightNum].On, 254, ushort.MaxValue*(0.0/360.0), 254, 0);
+                    Console.WriteLine("Device Name: {0}\tDevice ID: {1}", lights[lightNum].Name, lights[lightNum].ID);
+
+                    string desc = "(O)n/Off | (E)dit Name";
+                    if(lights[lightNum].ColorVariable) { desc += " | (C)olor"; }
+                    if(lights[lightNum].TemperatureVariable) { desc += " | (T)emp"; }
+                    if(lights[lightNum].BrightnessVariable) { desc += " | (B)rightness"; }
+                    Console.Write(desc + ": ");
+
+                    charInput = Convert.ToChar(Console.ReadLine());
+                    switch(charInput) {
+                        case ('O'):
+                            lights[lightNum].ToggleLight();
+                            break;
+                        case ('C'):
+                            Console.Write("Enter Color Name: ");
+                            stringInput = Console.ReadLine();
+                            lights[lightNum].SetColor(Color.FromName(stringInput));
+                            break;
+                        case ('T'):
+                            Console.Write("Enter Color Temp: ");
+                            stringInput = Console.ReadLine();
+                            lights[lightNum].SetTemperature(Convert.ToUInt16(stringInput));
+                            break;
+                        case ('B'):
+                            Console.Write("Enter Brightness: ");
+                            stringInput = Console.ReadLine();
+                            lights[lightNum].SetBrightness(Convert.ToByte(stringInput));
+                            break;
+                        case ('E'):
+                            Console.Write("Enter New Name: ");
+                            stringInput = Console.ReadLine();
+                            lights[lightNum].SetDeviceName(stringInput);
+                            Console.WriteLine("Light Name Changed!");
+                            break;
                     }
                 }
-            } while(lightNum != -1);
+            } while(lightNum >= 0);
             
             bridge.Client.Dispose();
             hub.Client.Dispose();
