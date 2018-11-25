@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 
 namespace ProxyConsole {
     class Program {
@@ -15,6 +16,8 @@ namespace ProxyConsole {
             bridge.InitializeClient();
             lights.AddRange(bridge.FindLights());
 
+            Console.WriteLine(hub.Client.PutAsync("lights/" + "id: " + lights[0].ID + "/state", new StringContent("")).Result.Content.ReadAsStringAsync().Result);
+
             int lightNum = -1;
             char input = '!';
             do {
@@ -22,11 +25,11 @@ namespace ProxyConsole {
                 lightNum = Convert.ToInt32(Console.ReadLine());
 
                 if(lightNum >= 0 && lightNum < lights.Count) {
-                    Console.WriteLine("{0}", lights[lightNum]);
-                    Console.Write("\nToggle? [y/n]: ");
+                    Console.WriteLine("{0}\n", lights[lightNum]);
+                    Console.Write("Toggle? [y/n]: ");
                     input = Convert.ToChar(Console.ReadLine());
                     if(input == 'y') {
-                        lights[lightNum].ToggleLight(); 
+                        lights[lightNum].SetState(lights[lightNum].On, 254, ushort.MaxValue*(0.0/360.0), 254, 0);
                     }
                 }
             } while(lightNum != -1);

@@ -5,9 +5,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 
 public class LifXColor {
-    [JsonProperty("hue")] public int Hue { get; set; }
-    [JsonProperty("saturation")] public int Saturation { get; set; }
-    [JsonProperty("kelvin")] public int Kelvin { get; set; }
+    [JsonProperty("hue")] public double Hue { get; set; }
+    [JsonProperty("saturation")] public double Saturation { get; set; }
+    [JsonProperty("kelvin")] public ushort Kelvin { get; set; }
 
     public LifXColor() {
         Hue = Saturation = 0;
@@ -20,6 +20,7 @@ public class LifXColor {
                 + "\n\tKelivn: " + Kelvin;
     }
 }
+
 public class LifXGroup {
     [JsonProperty("id")] public string ID { get; set; }
     [JsonProperty("name")] public string Name { get; set; }
@@ -33,6 +34,7 @@ public class LifXGroup {
                 + "\n\tName: " + Name;
     }
 }
+
 public class LifXCapabilities {
     [JsonProperty("has_color")] public bool HasColor { get; set; }
     [JsonProperty("has_variable_color_temp")] public bool HasVariableColorTemp { get; set; }
@@ -52,6 +54,7 @@ public class LifXCapabilities {
                 + "\n\t\tHas Multizone: " + HasMultizone;
     }
 }
+
 public class LifXProduct {
     [JsonProperty("name")] public string Name { get; set; }
     [JsonProperty("identifier")] public string Identifier { get; set; }
@@ -70,21 +73,50 @@ public class LifXProduct {
                 + "\n\tCapabilities: " + Capabilities;
     }
 }
+
 public class LifXLight : ILight {
-    [JsonProperty("id")] public string ID { get; set; }
+    #region Properties
     [JsonProperty("uuid")] public string UUID { get; set; }
-    [JsonProperty("label")] public string Name { get; set; }
     [JsonProperty("connected")] public bool Connected { get; set; }
     [JsonProperty("power")] public string Power { get; set; }
     [JsonProperty("color")] public LifXColor Color { get; set; }
-    [JsonProperty("brightness")] public int Brightness { get; set; }
     [JsonProperty("group")] public LifXGroup Group { get; set; }
     [JsonProperty("location")] public LifXGroup Location { get; set; }
     [JsonProperty("product")] public LifXProduct Product { get; set; }
     [JsonProperty("last_seen")] public string LastSeen { get; set; }
     [JsonProperty("seconds_since_seen")] public int SecondsSinceSeen { get; set; }
+    public LifXHub ParentHub { get; set; }
+    #endregion
 
-    public LifXHub ParentHub;
+    #region IDevice Variables
+    [JsonProperty("id")] public string ID { get; set; }
+    [JsonProperty("label")] public string Name { get; set; }
+    #endregion
+
+    #region ILight Variables
+    public bool On {
+        get { return Power.Equals("on") ? true : false; }
+        set { Power = value == true ? "on" : "false"; }
+    }
+
+    [JsonProperty("brightness")] public double Brightness { get; set; }
+
+    public double Hue {
+        get { return Color.Hue; }
+        set { Color.Hue = value; }
+    }
+
+    public double Saturation {
+        get { return Color.Saturation; }
+        set { Color.Saturation = value; }
+    }
+
+    public ushort Temperature {
+        get { return Color.Kelvin; }
+        set { Color.Kelvin = value; }
+    }
+    #endregion
+
 
     public LifXLight() {
         ID = UUID = Name = Power = LastSeen = "";
@@ -114,6 +146,14 @@ public class LifXLight : ILight {
 
     public void ToggleLight() {
         ParentHub.Client.PostAsync("lights/" + "id:" + ID + "/toggle", new StringContent(""));
+    }
+
+    public void SetState(bool on, double Brightness, double Hue, double Saturation, ushort Temperature) {
+        ParentHub.Client.PutAsync("lights/" + "id:" + ID + "/state", new StringContent(""));
+    }
+
+    public void SetColor() {
+        throw new NotImplementedException();
     }
 }
 

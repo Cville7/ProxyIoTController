@@ -8,10 +8,10 @@ using System.Net.Http.Headers;
 
 public class HueState {
     [JsonProperty("on")] public bool On { get; set; }
-    [JsonProperty("bri")] public int Bri { get; set; }
-    [JsonProperty("ct")] public int Ct { get; set; }
-    [JsonProperty("sat")] public int Sat { get; set; }
-    [JsonProperty("hue")] public int Hue { get; set; }
+    [JsonProperty("bri")] public byte Bri { get; set; }
+    [JsonProperty("ct")] public ushort Ct { get; set; }
+    [JsonProperty("sat")] public byte Sat { get; set; }
+    [JsonProperty("hue")] public ushort Hue { get; set; }
     [JsonProperty("alert")] public string Alert { get; set; }
     [JsonProperty("colormode")] public string Colormode { get; set; }
     [JsonProperty("mode")] public string Mode { get; set; }
@@ -19,8 +19,9 @@ public class HueState {
 
     public HueState() {
         On = Reachable = false;
-        Bri = Ct = Sat = Hue = 0;
-        Alert = Colormode = Mode = "";
+        Bri = Sat = 0;
+        Ct = Hue = 0;
+        Alert = Colormode = Mode = "";        
     }
 
     public override string ToString() {
@@ -35,10 +36,41 @@ public class HueState {
                 + "\n\tReachable: " + Reachable;
     }
 }
+
 public class HueLight : ILight {
+    #region IDevice Properties
     [JsonProperty("uniqueid")] public string ID { get; set; }
     [JsonProperty("name")] public string Name { get; set; }
+    #endregion
 
+    #region ILight Properties
+    public bool On {
+        get { return State.On; }
+        set { State.On = value; }
+    }
+
+    public double Brightness {
+        get { return State.Bri; }
+        set { State.Bri = Convert.ToByte(value > byte.MaxValue ? byte.MaxValue : value < byte.MinValue ? byte.MinValue : value); }
+    }
+
+    public double Hue {
+        get { return State.Hue; }
+        set { State.Hue = Convert.ToUInt16(value > ushort.MaxValue ? ushort.MaxValue : value < ushort.MinValue ? ushort.MinValue : value); }
+    }
+
+    public double Saturation {
+        get { return State.Sat; }
+        set { State.Sat = Convert.ToByte(value > byte.MaxValue ? byte.MaxValue : value < byte.MinValue ? byte.MinValue : value); }
+    }
+
+    public ushort Temperature {
+        get { return State.Ct; }
+        set { State.Ct = Convert.ToUInt16(value > 500 ? 500 : value < 153 ? 153 : value); }
+    }
+    #endregion
+
+    #region HueLight Properties
     [JsonProperty("state")] public HueState State { get; set; }
     [JsonProperty("type")] public string Type { get; set; }
     [JsonProperty("modelid")] public string ModelID { get; set; }
@@ -48,8 +80,8 @@ public class HueLight : ILight {
     [JsonProperty("configid")] public string ConfigID { get; set; }
     [JsonProperty("productid")] public string ProductID { get; set; }
     public string BridgeID { get; set; }
-
     public HueBridge ParentBridge { get; set; }
+    #endregion
 
     public HueLight() {
         State = new HueState();
@@ -58,8 +90,19 @@ public class HueLight : ILight {
 
     public void ToggleLight() {
         State.On = !(State.On);
-        StringContent content = new StringContent(JsonConvert.SerializeObject(State));
-        ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", content);
+        ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent(JsonConvert.SerializeObject(State)));
+    }
+
+    public void SetState(bool on, double brightness, double hue, double saturation, ushort temperature) {
+        On = on;
+        Brightness = brightness;
+        Hue = hue;
+        Saturation = saturation;
+        Temperature = temperature;
+
+        Console.WriteLine(JsonConvert.SerializeObject(State.Colormode));
+        Console.WriteLine(ParentBridge.Client.PutAsync("lights/" + BridgeID, new StringContent("{\"colormode\":\"hs\"}")).Result.Content.ReadAsStringAsync().Result);
+        Console.WriteLine(ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"hue\":" + 21845 + ",\"sat\":" + State.Sat + "}")).Result.Content.ReadAsStringAsync().Result);
     }
 
     public override string ToString() {
@@ -75,7 +118,12 @@ public class HueLight : ILight {
                 + "\nConfig ID: " + ConfigID
                 + "\nProduct ID: " + ProductID;
     }
+
+    public void SetColor() {
+        
+    }
 }
+
 public class HueBridge : ILightHub {
     [JsonProperty("internalipaddress")] public string InternalIPAddress { get; set; }
     [JsonProperty("id")] public string ID { get; set; }
@@ -121,6 +169,8 @@ public class HueBridge : ILightHub {
     }
 
     public override string ToString() {
-        return "IoT Device Type: Hue Bridge\nID: " + ID + "\nInternal IP Address: " + InternalIPAddress + "\n";
+        return "IoT Device Type: Hue Bridge\nID: " + ID 
+                + "\nInternal IP Address: " + InternalIPAddress 
+                + "\n";
     }
 }
