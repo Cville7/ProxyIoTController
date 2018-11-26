@@ -7,8 +7,8 @@ using System.Net.Http.Headers;
 
 public class LifXLight : ILight {
     #region IDevice Properties
-    [JsonProperty("id")] public string ID { get; set; }
-    [JsonProperty("label")] public string Name { get; set; }
+    [JsonProperty("id")] public override string ID { get; set; }
+    [JsonProperty("label")] public override string Name { get; set; }
     #endregion
     #region IDevice Methods
     public void SetDeviceName(string name) {
@@ -17,54 +17,58 @@ public class LifXLight : ILight {
     #endregion
 
     #region ILight Properties
-    public bool On {
+    public override bool On {
         get { return Power.Equals("on") ? true : false; }
         set { Power = value == true ? "on" : "false"; }
     }
 
-    [JsonProperty("brightness")] public double Brightness { get; set; }
+    [JsonProperty("brightness")] public override double Brightness { get; set; }
 
-    public double Hue {
+    public override double Hue {
         get { return Color.Hue; }
         set { Color.Hue = value; }
     }
 
-    public double Saturation {
+    public override double Saturation {
         get { return Color.Saturation; }
         set { Color.Saturation = value; }
     }
 
-    public ushort Temperature {
+    public override ushort Temperature {
         get { return Color.Kelvin; }
         set { Color.Kelvin = value; }
     }
 
-    public bool ColorVariable {
+    public override bool ColorVariable {
         get { return Product.Capabilities.HasColor; }
     }
 
-    public bool TemperatureVariable {
+    public override bool TemperatureVariable {
         get { return Product.Capabilities.HasVariableColorTemp; }
     }
 
-    public bool BrightnessVariable {
+    public override bool BrightnessVariable {
         get { return true; }
     }
     #endregion
     #region ILight Methods
-    public void ToggleLight() {
+    public override void ToggleLight(object[] args) {
         ParentHub.Client.PostAsync("lights/" + "id:" + ID + "/toggle", new StringContent(""));
     }
 
-    public void SetColor(Color color) {
+    public override void SetColor(object[] args) {
+        Hue = ((Color)args[0]).GetHue() / 360.0 * ushort.MaxValue;
+        Saturation = ((Color)args[0]).GetSaturation() * byte.MaxValue;
         throw new NotImplementedException();
     }
 
-    public void SetTemperature(ushort temperature) {
+    public override void SetTemperature(object[] args) {
+        Temperature = (ushort)args[0];
         throw new NotImplementedException();
     }
 
-    public void SetBrightness(double brightness) {
+    public override void SetBrightness(object[] args) {
+        Brightness = (double)args[0];
         throw new NotImplementedException();
     }
     #endregion
@@ -114,6 +118,7 @@ public class LifXHub : ILightHub {
     #region IDevice Properties
     public string ID { get; set; }
     public string Name { get; set; }
+    public List<Operation> Operations { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     #endregion
     #region IDevice Methods
     public void SetDeviceName(string name) {
@@ -133,6 +138,16 @@ public class LifXHub : ILightHub {
         }
         return Lights;
     }
+
+    public void InitializeHub() {
+        Client.BaseAddress = new Uri("https://api.lifx.com/v1/");
+        Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+    }
+
+    public List<Operation> GetAvailableOperations() {
+        throw new NotImplementedException();
+    }
     #endregion
 
     #region LifXHub Properties & Variables
@@ -144,13 +159,6 @@ public class LifXHub : ILightHub {
         ID = Name = "LifX Virtual Hub";
         Lights = new List<ILight>();
         Client = new HttpClient();
-        InitializeClient();
-    }
-
-    public void InitializeClient() {
-        Client.BaseAddress = new Uri("https://api.lifx.com/v1/");
-        Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
     #endregion
 }

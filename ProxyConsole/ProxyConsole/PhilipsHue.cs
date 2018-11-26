@@ -9,8 +9,8 @@ using System.Net.Http.Headers;
 
 public class HueLight : ILight {
     #region IDevice Properties
-    [JsonProperty("uniqueid")] public string ID { get; set; }
-    [JsonProperty("name")] public string Name { get; set; }
+    [JsonProperty("uniqueid")] public override string ID { get; set; }
+    [JsonProperty("name")] public override string Name { get; set; }
     #endregion
     #region IDevice Methods
     public void SetDeviceName(string name) {
@@ -20,45 +20,45 @@ public class HueLight : ILight {
     #endregion
 
     #region ILight Properties
-    public bool On {
+    public override bool On {
         get { return State.On; }
         set { State.On = value; }
     }
 
-    public double Brightness {
+    public override double Brightness {
         get { return State.Bri; }
         set { State.Bri = Convert.ToByte(value > byte.MaxValue ? byte.MaxValue : value < byte.MinValue ? byte.MinValue : value); }
     }
 
-    public double Hue {
+    public override double Hue {
         get { return State.Hue; }
         set { State.Hue = Convert.ToUInt16(value > ushort.MaxValue ? ushort.MaxValue : value < ushort.MinValue ? ushort.MinValue : value); }
     }
 
-    public double Saturation {
+    public override double Saturation {
         get { return State.Sat; }
         set { State.Sat = Convert.ToByte(value > byte.MaxValue ? byte.MaxValue : value < byte.MinValue ? byte.MinValue : value); }
     }
 
-    public ushort Temperature {
+    public override ushort Temperature {
         get { return State.CT; }
         set { State.CT = Convert.ToUInt16(value > 500 ? 500 : value < 153 ? 153 : value); }
     }
 
-    public bool ColorVariable {
+    public override bool ColorVariable {
         get { return !Capabilities.Control.ColorGamutType.Equals(""); }
     }
 
-    public bool TemperatureVariable {
+    public override bool TemperatureVariable {
         get { return !Capabilities.Control.CT.Max.Equals(0); }
     }
 
-    public bool BrightnessVariable {
+    public override bool BrightnessVariable {
         get { return !Capabilities.Control.MinDimLevel.Equals(0); }
     }
     #endregion
     #region ILight Methods
-    public void ToggleLight() {
+    public override void ToggleLight(object[] args) {
         State.On = !(State.On);
         ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent(JsonConvert.SerializeObject(State)));
     }
@@ -75,19 +75,19 @@ public class HueLight : ILight {
         Console.WriteLine(ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"hue\":" + 21845 + ",\"sat\":" + State.Sat + "}")).Result.Content.ReadAsStringAsync().Result);
     }
 
-    public void SetColor(Color color) {
-        Hue = color.GetHue() / 360.0 * ushort.MaxValue;
-        Saturation = color.GetSaturation() * byte.MaxValue;
+    public override void SetColor(object[] args) {
+        Hue = ((Color)args[0]).GetHue() / 360.0 * ushort.MaxValue;
+        Saturation = ((Color)args[0]).GetSaturation() * byte.MaxValue;
         ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"hue\":" + Hue + ",\"sat\":" + Saturation + "}"));
     }
 
-    public void SetTemperature(ushort temperature) {
-        Temperature = temperature;
+    public override void SetTemperature(object[] args) {
+        Temperature = (ushort)args[0];
         ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"ct\":" + Temperature + "}"));
     }
 
-    public void SetBrightness(double brightness) {
-        Brightness = brightness;
+    public override void SetBrightness(object[] args) {
+        Brightness = (double)args[0];
         ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"bri\":" + Brightness + "}"));
     }
     #endregion
@@ -136,6 +136,7 @@ public class HueBridge : ILightHub {
     #region IDevice Properties
     [JsonProperty("id")] public string ID { get; set; }
     public string Name { get; set; }
+    public List<Operation> Operations { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
     #endregion
     #region IDevice Methods
     public void SetDeviceName(string name) {
@@ -163,6 +164,14 @@ public class HueBridge : ILightHub {
         }
         return Lights;
     }
+
+    public void InitializeHub() {
+        ID = JsonConvert.DeserializeObject<List<HueBridge>>(GetDiscoveryString())[0].ID;
+        InternalIPAddress = JsonConvert.DeserializeObject<List<HueBridge>>(GetDiscoveryString())[0].InternalIPAddress;
+        Name = "Hue Bridge " + ID;
+        Client.BaseAddress = new Uri("http://" + InternalIPAddress + "/api/" + token + "/");
+        Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    }
     #endregion
 
     #region HueBridge Properties & Variables
@@ -177,12 +186,6 @@ public class HueBridge : ILightHub {
         Client = new HttpClient();
     }
 
-    public void InitializeClient() {
-        Client.BaseAddress = new Uri("http://" + InternalIPAddress + "/api/" + token + "/");
-        Client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        Name = "Hue Bridge " + ID;
-    }
-
     public string GetDiscoveryString() {
         string html = String.Empty;
         using(StreamReader sr = new StreamReader(WebRequest.Create("https://discovery.meethue.com/").GetResponse().GetResponseStream())) {
@@ -195,6 +198,10 @@ public class HueBridge : ILightHub {
         return "IoT Device Type: Hue Bridge\nID: " + ID 
                 + "\nInternal IP Address: " + InternalIPAddress 
                 + "\n";
+    }
+
+    public List<Operation> GetAvailableOperations() {
+        throw new NotImplementedException();
     }
     #endregion
 }
