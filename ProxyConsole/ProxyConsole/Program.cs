@@ -22,7 +22,7 @@ namespace ProxyConsole {
                 }
             }
             Console.WriteLine("{0}\n",info);
-            Console.Read();
+            //Console.Read();
 
             int serviceNum = -1;
             int deviceNum = -1;

@@ -4,9 +4,6 @@
              xmlns:local="clr-namespace:ProxyMobile"
              x:Class="ProxyMobile.MainPage">
 
-    <StackLayout x:Name="iot">
-        <!-- Place new controls here -->
-        
-    </StackLayout>
+    
 
 </ContentPage>
