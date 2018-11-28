@@ -36,7 +36,7 @@ public abstract class ILight : IDevice {
     public abstract double Brightness { get; set; }
     public abstract double Hue { get; set; }
     public abstract double Saturation { get; set; }
-    public abstract ushort Temperature { get; set; }
+    public abstract double Temperature { get; set; }
     public abstract bool ColorVariable { get; }
     public abstract bool TemperatureVariable { get; }
     public abstract bool BrightnessVariable { get; }
@@ -50,7 +50,7 @@ public abstract class ILight : IDevice {
         Operations = new List<Operation> {
             new Operation { Name = "Toggle Light", Run = ToggleLight, ParamTypes = new object[]{ } },
             new Operation { Name = "Set Color", Run = SetColor, ParamTypes = new object[]{ new Color() } },
-            new Operation { Name = "Set Temperature", Run = SetTemperature, ParamTypes = new object[]{ new ushort() } },
+            new Operation { Name = "Set Temperature", Run = SetTemperature, ParamTypes = new object[]{ new double() } },
             new Operation { Name = "Set Brightness", Run = SetBrightness, ParamTypes = new object[]{ new double() } }
         };
     }

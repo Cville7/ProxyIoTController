@@ -9,111 +9,44 @@ namespace ProxyMobile
 {
     public partial class MainPage : ContentPage
     {
-        enum State { Services, Devices, Operations, Inputs };
         List<IService> services;
-        State state;
-        IService activeService;
-        IDevice activeDevice;
-        Operation activeOperation;
-        StackLayout iot;
+        StackLayout stack;
+        ScrollView scroll;
 
         public MainPage()
         {
-            iot = new StackLayout {
+            stack = new StackLayout {
                 Orientation = StackOrientation.Vertical,
-                Padding = 0
+                Padding = new Thickness(20,0,20,0)
             };
-
             InitializeComponent();
-            iot.Children.Clear();
-            state = State.Services;
 
             services = new List<IService> {
                 new LightService(new List<ILightHub> { new LifXHub(), new HueBridge()})
             };
 
+            var header = new Label() {
+                Text = "Services Available",
+                FontSize = 26
+            };
+            stack.Children.Add(header);
+
             foreach(IService service in services) {
-                var serviceLabel = new Label() {
+                var serviceButton = new Button() {
                     Text = service.Name.ToString(),
                     FontSize = 20
                 };
 
-                iot.Children.Add(serviceLabel);
+                serviceButton.Pressed += (sender, args) => {
+                    Navigation.PushModalAsync(new ServicePage(service));
+                };
 
-                foreach(IDevice device in service.Devices) {
-                    var deviceLabel = new Label() {
-                        Text = device.Name.ToString(),
-                    };
-
-                    iot.Children.Add(deviceLabel);
-
-                    foreach(Operation operation in device.GetAvailableOperations()) {
-                        var operationBtn = new Button() {
-                            Text = operation.Name.ToString()
-                        };
-                        operationBtn.Pressed += (sender, e) => DeviceEvent(sender, e, device);
-                        iot.Children.Add(operationBtn);
-                    }
-                }
+                stack.Children.Add(serviceButton);
             }
 
-            var scrollView = new ScrollView { Content = iot };
+            scroll = new ScrollView { Content = stack };
 
-            Content = scrollView;
-        }
-
-        public void DoThing(object sender, IDevice device) {
-            ((Button)sender).Text = "boop";
-        }
-
-        static void DeviceEvent(object sender, EventArgs e, IDevice device) {
-            device.Operations[0].Run();
-        }
-
-        void ProxyEvent(object sender, EventArgs e, params object[] objects) {
-            switch(state) {
-                case State.Services:
-                    state = State.Devices;
-                    activeService = (IService)objects[0];
-                    break;
-            }
-            RenderApp();
-        }
-
-        void RenderApp() {
-            switch(state) {
-                case State.Services:
-                    iot.Children.Clear();
-                    foreach(IService service in services) {
-                        var btn = new Button() {
-                            Text = service.Name.ToString()
-                        };
-
-                        btn.Pressed += (sender, e) => ProxyEvent(sender, e, service);
-
-                        iot.Children.Add(btn);
-                    }
-                    break;
-
-                case State.Devices:
-                    iot.Children.Clear();
-                    foreach(IDevice device in activeService.Devices) {
-                        var btn = new Button() {
-                            Text = device.Name.ToString()
-                        };
-
-                        btn.Pressed += (sender, e) => DeviceEvent(sender, e, device);
-
-                        iot.Children.Add(btn);
-                    }
-                    break;
-
-                case State.Operations:
-                    break;
-
-                case State.Inputs:
-                    break;
-            }
+            Content = scroll;
         }
     }
 }

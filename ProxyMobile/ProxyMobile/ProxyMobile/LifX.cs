@@ -34,9 +34,9 @@ public class LifXLight : ILight {
         set { Color.Saturation = value; }
     }
 
-    public override ushort Temperature {
+    public override double Temperature {
         get { return Color.Kelvin; }
-        set { Color.Kelvin = value; }
+        set { Color.Kelvin = 50; }
     }
 
     public override bool ColorVariable {

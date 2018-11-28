@@ -26,8 +26,8 @@ public class HueLight : ILight {
     }
 
     public override double Brightness {
-        get { return State.Bri; }
-        set { State.Bri = Convert.ToByte(value > byte.MaxValue ? byte.MaxValue : value < byte.MinValue ? byte.MinValue : value); }
+        get { return (State.Bri-1.0)/253; }
+        set { State.Bri = Convert.ToByte((value * 253) + 1); }
     }
 
     public override double Hue {
@@ -40,9 +40,9 @@ public class HueLight : ILight {
         set { State.Sat = Convert.ToByte(value > byte.MaxValue ? byte.MaxValue : value < byte.MinValue ? byte.MinValue : value); }
     }
 
-    public override ushort Temperature {
-        get { return State.CT; }
-        set { State.CT = Convert.ToUInt16(value > 500 ? 500 : value < 153 ? 153 : value); }
+    public override double Temperature {
+        get { return (State.CT - Capabilities.Control.CT.Min) / (double)(Capabilities.Control.CT.Max - Capabilities.Control.CT.Min); }
+        set { State.CT = Convert.ToUInt16(((Capabilities.Control.CT.Max - Capabilities.Control.CT.Min) * value) + Capabilities.Control.CT.Min)  ;}
     }
 
     public override bool ColorVariable {
@@ -82,13 +82,14 @@ public class HueLight : ILight {
     }
 
     public override void SetTemperature(object[] args) {
-        Temperature = (ushort)args[0];
-        ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"ct\":" + Temperature + "}"));
+        Temperature = (double)args[0];
+        ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"ct\":" + (((Capabilities.Control.CT.Max - Capabilities.Control.CT.Min) * Temperature) + Capabilities.Control.CT.Min) + "}"));
     }
 
     public override void SetBrightness(object[] args) {
         Brightness = (double)args[0];
-        ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"bri\":" + Brightness + "}"));
+        ParentBridge.Client.PutAsync("lights/" + BridgeID + "/state/", new StringContent("{\"bri\":" + ((Brightness * 253) + 1) + "}"));
+        
     }
     #endregion
 
